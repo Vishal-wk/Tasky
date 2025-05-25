@@ -102,20 +102,81 @@ import (
 // 	fmt.Println(string(data))
 // }
 
-func main() {
-	
 
+func main() {
 	if email == "" || apiToken == "" {
 		log.Fatal("JIRA_EMAIL and JIRA_API_TOKEN must be set as environment variables")
 	}
 
-	url := fmt.Sprintf("%s/rest/api/3/project", jiraDomain)
+	// Step 1: Get all projects (paginated)
+	projects := getAllProjects()
+	fmt.Println("\n✅ Projects:")
+	for _, p := range projects {
+		fmt.Printf("- %s (%s)\n", p["name"], p["key"])
 
+		// Step 2: For each project, get issues (tasks, epics, subtasks)
+		issues := getIssues(p["key"].(string))
+		for _, issue := range issues {
+			fields := issue["fields"].(map[string]interface{})
+			issueType := fields["issuetype"].(map[string]interface{})["name"]
+			summary := fields["summary"]
+			fmt.Printf("  - [%s] %s\n", issueType, summary)
+		}
+	}
+}
+
+func getAllProjects() []map[string]interface{} {
+	projects := []map[string]interface{}{}
+	startAt := 0
+	maxResults := 50
+	for {
+		url := fmt.Sprintf("%s/rest/api/3/project/search?startAt=%d&maxResults=%d", jiraDomain, startAt, maxResults)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Fatalf("Failed to create request: %v", err)
+		}
+		auth := base64.StdEncoding.EncodeToString([]byte(email + ":" + apiToken))
+		req.Header.Set("Authorization", "Basic "+auth)
+		req.Header.Set("Accept", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatalf("Request failed: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			log.Fatalf("Jira API returned status %d", resp.StatusCode)
+		}
+
+		var result struct {
+			IsLast     bool                       `json:"isLast"`
+			StartAt    int                        `json:"startAt"`
+			MaxResults int                        `json:"maxResults"`
+			Total      int                        `json:"total"`
+			Values     []map[string]interface{}   `json:"values"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			log.Fatalf("Failed to parse project response: %v", err)
+		}
+
+		projects = append(projects, result.Values...)
+		if result.IsLast || len(result.Values) == 0 {
+			break
+		}
+		startAt += maxResults
+	}
+	return projects
+}
+
+//func getProjects()
+func getIssues(projectKey string) []map[string]interface{} {
+	url := fmt.Sprintf("%s/rest/api/3/search?jql=project=%s", jiraDomain, projectKey)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Fatalf("Failed to create request: %v", err)
 	}
-
 	auth := base64.StdEncoding.EncodeToString([]byte(email + ":" + apiToken))
 	req.Header.Set("Authorization", "Basic "+auth)
 	req.Header.Set("Accept", "application/json")
@@ -131,13 +192,12 @@ func main() {
 		log.Fatalf("Jira API returned status %d", resp.StatusCode)
 	}
 
-	var projects []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
-		log.Fatalf("Failed to parse response: %v", err)
+	var result struct {
+		Issues []map[string]interface{} `json:"issues"`
 	}
-
-	fmt.Println("✅ Projects:")
-	for _, p := range projects {
-		fmt.Printf("- %s (%s)\n", p["name"], p["key"])
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		log.Fatalf("Failed to parse issues response: %v", err)
 	}
+	return result.Issues
 }
+
