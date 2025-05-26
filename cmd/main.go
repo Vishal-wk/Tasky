@@ -102,7 +102,6 @@ import (
 // 	fmt.Println(string(data))
 // }
 
-
 func main() {
 	if email == "" || apiToken == "" {
 		log.Fatal("JIRA_EMAIL and JIRA_API_TOKEN must be set as environment variables")
