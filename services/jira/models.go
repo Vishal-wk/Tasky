@@ -1,4 +1,4 @@
-package jira 
+package jira
 
 type Project struct {
 	IsLast     bool    `json:"isLast"`
