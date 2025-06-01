@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Vishal-/Tasky/config"
+	"github.com/Vishal/Tasky/config"
 
 )
 //random
+//try again
 type Client struct{
 	Email string
 	APIToken string
