@@ -1,29 +1,27 @@
 package jira
 
 import (
+	"Tasky/config"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strings"
-
-	"github.com/Vishal/Tasky/config"
-
 )
 
-type Client struct{
-	Email string
+type Client struct {
+	Email    string
 	APIToken string
-	Domain string
+	Domain   string
 }
 
-func New(email, APIToken, domain string)Client{
- return Client{
-	Email: email,
-	APIToken: APIToken,
-	Domain: domain,
- }
+func New(email, APIToken, domain string) Client {
+	return Client{
+		Email:    email,
+		APIToken: APIToken,
+		Domain:   domain,
+	}
 }
 func GetAllProjects(cfg config.Config) []Value {
 	var allProjects []Value
@@ -127,23 +125,23 @@ func base64Encode(s string) string {
 }
 
 func ValidateToken(token string) (string, error) {
-    req, err := http.NewRequest("GET", "https://your-domain.atlassian.net/rest/api/3/myself", nil)
-    if err != nil {
-        return "", err
-    }
+	req, err := http.NewRequest("GET", "https://your-domain.atlassian.net/rest/api/3/myself", nil)
+	if err != nil {
+		return "", err
+	}
 
-    req.Header.Add("Authorization", "Bearer "+token)
-    req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("Accept", "application/json")
 
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        return "", err
-    }
-    defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
 
-    if resp.StatusCode == 200 {
-        return "Token is valid", nil
-    }
+	if resp.StatusCode == 200 {
+		return "Token is valid", nil
+	}
 
-    return "", fmt.Errorf("Invalid token: status %d", resp.StatusCode)
+	return "", fmt.Errorf("Invalid token: status %d", resp.StatusCode)
 }
