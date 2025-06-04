@@ -1,13 +1,13 @@
 package jira
 
 import (
-	"Tasky/config"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strings"
+	"tasky/config"
 )
 
 type Client struct {
