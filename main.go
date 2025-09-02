@@ -1,4 +1,6 @@
-import fmt
+package main 
+
+import 
 
 func main(){
     
